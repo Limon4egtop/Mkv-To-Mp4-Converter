@@ -1,37 +1,49 @@
 import os
-import ffmpeg # pip install ffmpeg-python
+import ffmpeg  # pip install ffmpeg-python
 import sys
 
-start_dir = os.getcwd() # Get the file path
+# Получить текущую директорию
+start_dir = os.getcwd()
+input_dir = os.path.join(start_dir, "input")  # Папка input
+output_dir = os.path.join(start_dir, "output")  # Папка output
 
-# Function that convert a .mkv file to .mp4 file (REQUIRE FFMPEG.EXE IN THE SAME FOLDER THAT THIS SCRIPT)
-def convert_to_mp4(mkv_file):
-    name, ext = os.path.splitext(mkv_file)
-    out_name = name + ".mp4"
+# Убедимся, что папка output существует
+os.makedirs(output_dir, exist_ok=True)
+
+# Функция для преобразования файла .mkv в .mp4 (ТРЕБУЕТ НАЛИЧИЯ FFMPEG.EXE В ТОЙ ЖЕ ПАПКЕ, ЧТО И СКРИПТ)
+def convert_to_mp4(mkv_file, output_path):
+    name, ext = os.path.splitext(os.path.basename(mkv_file))
+    out_name = os.path.join(output_path, name + ".mp4")
     ffmpeg.input(mkv_file).output(out_name).run()
-    print("Finished converting {}".format(mkv_file))
+    print("Завершено преобразование: {} -> {}".format(mkv_file, out_name))
 
-
+# Функция для обработки всех файлов .mkv в папке input
 def convert_folder_to_mp4():
-    # for-loop that iterate all the files in the actual path
-    for path, folder, files in os.walk(start_dir):
-        for file in files:
-            # If the loop find a .mkv file, call the previous function to convert it
-            if file.endswith('.mkv'):
-                print("Found file: %s" % file)
-                convert_to_mp4(os.path.join(start_dir, file))
-            else:
-                pass
+    # Проверяем, существует ли папка input
+    if not os.path.exists(input_dir):
+        print("Папка input не найдена. Создайте папку input и добавьте файлы .mkv.")
+        return
 
+    # Перебираем файлы в папке input
+    for file in os.listdir(input_dir):
+        if file.endswith('.mkv'):
+            mkv_file = os.path.join(input_dir, file)
+            print("Найден файл: {}".format(mkv_file))
+            convert_to_mp4(mkv_file, output_dir)
+        else:
+            print("Пропущен файл: {} (не .mkv)".format(file))
 
 if __name__ == "__main__":
-    if(len(sys.argv)==1): # checks if the user has opened the script with a file, in this case the script will only convert that file. 
-                          # Otherwise will convert all the .mvk files in the actual folder
-        print("No file has been passed, all the .mvk files in actual folder will be convert. Press any key to continue")
+    if len(sys.argv) == 1:  # Если аргументы не переданы, обрабатываем все файлы из input
+        print("Все файлы .mkv из папки input будут преобразованы в .mp4 и сохранены в папке output. Нажмите Enter для продолжения.")
         input()
         convert_folder_to_mp4()
-    else:
-        print("a file has been passed: "+sys.argv[1])
-        print("press any key to continue")
-        input()
-        convert_to_mp4(sys.argv[1])
+    else:  # Если передан конкретный файл, конвертируем только его
+        mkv_file = sys.argv[1]
+        if os.path.isfile(mkv_file) and mkv_file.endswith('.mkv'):
+            print("Передан файл: {}".format(mkv_file))
+            print("Нажмите Enter для продолжения.")
+            input()
+            convert_to_mp4(mkv_file, output_dir)
+        else:
+            print("Ошибка: Передан файл не формата .mkv или файл не существует.")
